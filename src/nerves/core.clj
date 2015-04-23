@@ -20,3 +20,8 @@
   [{}
    {}
    {}])
+
+(def sample-eat                                             ;; event action table
+  {
+   [[2 3 4] "test"] (fn [] "Test 1 fired")                  ;; requires a table-first invocation, e.g. (apply (sample-eat [[2 3 4] "test"]) nil)
+   })
