@@ -42,6 +42,8 @@
    [[3] "frab"]  [(fn [] (println "Frab action called")) [2]]
    [[3] "blark"] [(fn [] (println "Blark action called")) [1]]})
 
+;; TODO: catch un-matched state-action pairs
+
 (defn run-action
   ""
   [eat state action]
