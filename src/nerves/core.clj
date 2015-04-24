@@ -42,14 +42,19 @@
    [[3] "frab"]  [(fn [] (println "Frab action called")) [2]]
    [[3] "blark"] [(fn [] (println "Blark action called")) [1]]})
 
-;; TODO: catch un-matched state-action pairs
 
 (defn run-action
-  "Applies the supplied state and action to the event action table, returning the resulting state."
+  "Applies the supplied state and action to the event action table, returning the resulting state.
+  If the state-action combination is not found, a warning is printed to the REPL and the originally
+  supplied state is returned."
   [eat state action]
-  (let [[action-fn dest-state] (eat [state action])]
-    (action-fn)
-    dest-state))
+  (if-let [[action-fn dest-state] (eat [state action])]
+    (do
+      (action-fn)
+      dest-state)
+    (do
+      (println "Warning: state action combination not found in event-action table.") ;; TODO: proper logging
+      state)))
 
 ;; sample invocation
 (run-action sample-eat [3] "blark")                         ;; gives [1]
