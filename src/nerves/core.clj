@@ -45,7 +45,7 @@
 ;; TODO: catch un-matched state-action pairs
 
 (defn run-action
-  ""
+  "Applies the supplied state and action to the event action table, returning the resulting state."
   [eat state action]
   (let [[action-fn dest-state] (eat [state action])]
     (action-fn)
