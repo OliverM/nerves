@@ -12,8 +12,8 @@ Data structure shorthand for statecharts:
 				- name
 					- Required. String.
 				- actions
-					- An array of actions available in this state. Actions are pairs of destination state names and zero-argument functions.
-					- enter-state and exit-state actions are two reserved action names fired when entering and leaving the state. Destination state names supplied here are ignored.
+					- An array of actions available in this state. Actions are triples of action names, destination state names and zero-argument functions.
+					- enter-state and exit-state actions are two reserved action names fired when entering and leaving the state. Destination state names supplied here are ignored if present.
 	Statechart definition:
 		- An array of states, each of which can have arbitrarily-deep substates
 
