@@ -1,4 +1,7 @@
-(ns nerves.core)
+(ns nerves.core
+  (:require [clojure.walk :refer [walk]]
+            [clojure.core.match :refer [match]]
+            [aprint.core :refer [aprint ap]]))
 
 (defrecord Statechart [])
 
@@ -32,7 +35,14 @@
 
 (defn statechart->eat
   "Convert a statechart specification into a functioning event-action table"
-  [])
+  [statechart]
+  (let [state-counter (atom 0)
+        id-dict (atom {})]
+    (map (fn [state]
+           (let [id (swap! state-counter inc)]
+             (swap! id-dict assoc (:name state) @state-counter)
+             (assoc state :id id)))
+       statechart)))
 
 (def sample-eat                                             ;; event action table
   {[[1] "frob"]  [(fn [] (println "Frob action called")) [2]]
