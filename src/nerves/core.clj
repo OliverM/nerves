@@ -21,16 +21,19 @@
 (def basic-statechart
   [{:name    "StateA"
     :default true
-    :actions [["frob"] ["StateB"] (fn [] "Frob action called")
-              ["blork"] ["StateC"] (fn [] "Blork action called")
+    :actions [
+              ["frob" "StateB" (fn [] "Frob action called")]
+              ["blork" "StateC" (fn [] "Blork action called")]
               ]}
    {:name    "StateB"
-    :actions [["freb"] ["StateA"] (fn [] "Freb action called")
-              ["blerk"] ["StateC"] (fn [] "Blerk action called")
+    :actions [
+              ["freb" "StateA" (fn [] "Freb action called")]
+              ["blerk" "StateC" (fn [] "Blerk action called")]
               ]}
    {:name    "StateC"
-    :actions [["frab"] ["StateB"] (fn [] "Frab action called")
-              ["blark"] ["StateA"] (fn [] "Blark action called")
+    :actions [
+              ["frab" "StateB" (fn [] "Frab action called")]
+              ["blark" "StateA" (fn [] "Blark action called")]
               ]}])
 
 (defn statechart->eat
@@ -38,11 +41,18 @@
   [statechart]
   (let [state-counter (atom 0)
         id-dict (atom {})]
-    (map (fn [state]
-           (let [id (swap! state-counter inc)]
-             (swap! id-dict assoc (:name state) @state-counter)
-             (assoc state :id id)))
-       statechart)))
+    (->> (map (fn [state]                                    ;; state-level manipulations
+               (let [id (swap! state-counter inc)]
+                 (swap! id-dict assoc (:name state) @state-counter)
+                 (assoc state :id id)))
+             statechart)
+        (reduce (fn [eat state]
+                  (into eat
+                        (for [action (:actions state)]
+                          [[[(:id state)] (nth action 0)]     ;; statechart status and action
+                           [(nth action 2) [(@id-dict (nth action 1))]]
+                           ])))
+                {}))))
 
 (def sample-eat                                             ;; event action table
   {[[1] "frob"]  [(fn [] (println "Frob action called")) [2]]
@@ -63,7 +73,7 @@
       (action-fn)
       dest-state)
     (do
-      (println "Warning: state action combination not found in event-action table.") ;; TODO: proper logging
+      (printf "Warning: state action combination %s %s not found in event-action table." state action) ;; TODO: proper logging
       state)))
 
 ;; sample invocation
