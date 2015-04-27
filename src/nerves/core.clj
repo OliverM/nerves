@@ -1,5 +1,6 @@
 (ns nerves.core
   (:require [clojure.walk :refer [walk]]
+            [clojure.set :refer [map-invert]]
             [clojure.core.match :refer [match]]
             [aprint.core :refer [aprint ap]]))
 
@@ -35,6 +36,19 @@
               ["frab" "StateB" (fn [] "Frab action called")]
               ["blark" "StateA" (fn [] "Blark action called")]
               ]}])
+
+(def nested-statechart                                      ;; fig. 6.6 in Horrocks
+  [{:name "A"
+    :default true
+    :actions [["3" "B" (fn [] "Action 3 called")]]
+    :children [
+               {:name "C"
+                :actions [["2" "B" (fn [] "Action 2 called")]]}
+               {:name "D"
+                :default true}]}
+   {:name "B"
+    :actions [["4" "D" (fn [] "Action 4 called")]]}]
+  )
 
 (defn statechart->eat
   "Convert a statechart specification into a functioning event-action table"
