@@ -2,7 +2,8 @@
   (:require [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.core.match :refer [match]]
-            [aprint.core :refer [aprint ap]]))
+            [aprint.core :refer [aprint ap]]
+            [nerves.samples :as ns]))
 
 (defrecord Statechart [])
 
@@ -19,36 +20,6 @@
                          ]
    })
 
-(def basic-statechart
-  [{:name    "StateA"
-    :default true
-    :actions [
-              ["frob" "StateB" (fn [] "Frob action called")]
-              ["blork" "StateC" (fn [] "Blork action called")]
-              ]}
-   {:name    "StateB"
-    :actions [
-              ["freb" "StateA" (fn [] "Freb action called")]
-              ["blerk" "StateC" (fn [] "Blerk action called")]
-              ]}
-   {:name    "StateC"
-    :actions [
-              ["frab" "StateB" (fn [] "Frab action called")]
-              ["blark" "StateA" (fn [] "Blark action called")]
-              ]}])
-
-(def nested-statechart                                      ;; fig. 6.6 in Horrocks
-  [{:name "A"
-    :default true
-    :actions [["3" "B" (fn [] "Action 3 called")]]
-    :children [
-               {:name "C"
-                :actions [["2" "B" (fn [] "Action 2 called")]]}
-               {:name "D"
-                :default true}]}
-   {:name "B"
-    :actions [["4" "D" (fn [] "Action 4 called")]]}]
-  )
 
 (defn statechart->eat
   "Convert a statechart specification into a functioning event-action table"
@@ -68,14 +39,6 @@
                            ])))
                 {}))))
 
-(def sample-eat                                             ;; event action table
-  {[[1] "frob"]  [(fn [] (println "Frob action called")) [2]]
-   [[1] "blork"] [(fn [] (println "Blork action called")) [3]]
-   [[2] "freb"]  [(fn [] (println "Freb action called")) [1]]
-   [[2] "blerk"] [(fn [] (println "Blerk action called")) [3]]
-   [[3] "frab"]  [(fn [] (println "Frab action called")) [2]]
-   [[3] "blark"] [(fn [] (println "Blark action called")) [1]]})
-
 
 (defn run-action
   "Applies the supplied state and action to the event action table, returning the resulting state.
@@ -91,4 +54,4 @@
       state)))
 
 ;; sample invocation
-(run-action sample-eat [3] "blark")                         ;; gives [1]
+(run-action ns/sample-eat [3] "blark")                         ;; gives [1]
