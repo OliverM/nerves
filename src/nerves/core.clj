@@ -1,6 +1,7 @@
 (ns nerves.core
   (:require [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
+            [clojure.zip :as z]
             [clojure.core.match :refer [match]]
             [aprint.core :refer [aprint ap]]
             [nerves.samples :as ns]))
@@ -55,3 +56,14 @@
 
 ;; sample invocation
 (run-action ns/basic-sc-eat [3] "blark")                         ;; gives [1]
+
+(defn sc-zip
+  "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
+  [root]
+  (z/zipper
+    #(vector? (:children %))
+    (fn [state] (:children state))
+    (fn [state children] (if (:children state)
+                           (assoc state :children (into (:children state) children))
+                           (assoc state :children (into [] children))))
+    {:children root}))
