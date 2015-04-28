@@ -20,13 +20,17 @@ Data structure shorthand for statecharts:
 		- An array of states, each of which can have arbitrarily-deep substates
 
 Generating the Event-Action Table:
-	An event action table is a map keyed by the statechart state variables & fired event, returning a pair of actions to perform and the statechart destination state variables after arriving at the event destination
+	An event action table is a map keyed by the statechart state & fired event, returning a pair of actions to perform and the statechart destination state variables after arriving at the event destination
 	- Statecharts are recursive collections of states, with new collections keyed on the :children entry. Each collection needs to be decorated with atoms, state identifiers, etc; these decorators need to be wielded by a walker across the entire statechart
 		- For each collection, gather the state names and assign each a number.  @done
-		- For each collection, generate state variables tracking the current status of the statechart
-			- If not concurrent, create a single atom to hold the currently active state, set to the default state in the collection (if none are tagged as default and there's more than one state, signal an error)
-			- if concurrent, create an atom for each state variable to track the currently active state within each state (redundant if some states have only one child, but however)
-		- History:
-			- No history-specific state variable, just use last visited state in that set as a cache? Should be ignored when selected event transitions in the EAT though. Think that invalidates current approach on keying on state-set & fired action...! Move to core.match, using bindings to capture the history state from the cached state?? Or generate the combination explosion anyway, it's not like it'll be maintained by hand??
+		- For each collection, generate an entry in the state variable 
+			- If not concurrent, create a single entry to hold the currently active state
+			- if concurrent, create an entry for each child state to track the currently active state within each state (redundant if some states have only one child, but however)
+		When startng up the statechart, need an uxiliary data structure to track history and default states per sibling set
+			- History:
+				- No history-specific state variable, just use last visited state in that set as a cache? Should be ignored when selected event transitions in the EAT though. Think that invalidates current approach on keying on state-set & fired action...! Move to core.match, using bindings to capture the history state from the cached state?? Or generate the combination explosion anyway, it's not like it'll be maintained by hand??
+				- Default states:
+					- For each state collection (set of sibling states), if none are tagged as default and there's more than one state, signal an error
 		- For each state,
 			- Generate state entry and state exit actions, performed during state transitions and incorporating any user-specified entry & exit actions, that update the statechart state variables. These should thread through nested states to properly fire entry and exit functions for those states as necessary
+			

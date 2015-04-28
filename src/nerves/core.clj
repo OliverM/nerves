@@ -54,4 +54,4 @@
       state)))
 
 ;; sample invocation
-(run-action ns/sample-eat [3] "blark")                         ;; gives [1]
+(run-action ns/basic-sc-eat [3] "blark")                         ;; gives [1]
