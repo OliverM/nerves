@@ -67,6 +67,23 @@
       (assoc state :children children))
     {:children root}))
 
+(defn- sc->state-index-length
+  [statechart]
+  "Determine the length of the active state vector for indexing into the event-action table.
+  Increments by one for each state with children, by the count of the child states for states with
+  concurrent children, or is unchanged for states without children."
+  (loop [loc (sc-zip statechart)
+         req-indices 0]
+    (if (z/end? loc)
+      req-indices
+      (recur (z/next loc)
+             (let [this-node (z/node loc)]
+               (if (:concurrent-children this-node)
+                 (+ (count (:children this-node)) req-indices)
+                 (if (:children this-node)
+                   (+ 1 req-indices)
+                   req-indices)))))))
+
 (defn sc-visitor
   [statechart]
   (loop [loc (sc-zip statechart)
