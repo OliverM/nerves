@@ -101,13 +101,13 @@
 (defn- merge-eats
   "Merge a child eat with a parent eat"
   [parent child]
-  (for [parent-transition (seq parent)
-        child-transition (seq child)]
-    (let [[[parent-start-state parent-event] [parent-action parent-end-state]] parent-transition
-          [[child-start-state child-event] [child-action child-end-state]] child-transition
-          merged-start-state (into parent-start-state child-start-state)]
-      {[merged-start-state parent-event] [parent-action parent-end-state]
-       [merged-start-state child-event] [child-action child-end-state]}
-      ))
+  (into {} (for [parent-transition (seq parent)
+                 child-transition (seq child)]
+             (let [[[parent-start-state parent-event] [parent-action parent-end-state]] parent-transition
+                   [[child-start-state child-event] [child-action child-end-state]] child-transition
+                   merged-start-state (into parent-start-state child-start-state)]
+               {[merged-start-state parent-event] [parent-action parent-end-state]
+                [merged-start-state child-event]  [child-action child-end-state]}
+               )))
   )
 
