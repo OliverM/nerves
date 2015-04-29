@@ -70,7 +70,10 @@
 (defn sc-visitor
   [statechart]
   (loop [loc (sc-zip statechart)
-         counter 1]
+         counter 1
+         id-dict {}]
     (if (z/end? loc)
-      (z/root loc)
-      (recur (z/next (z/edit loc assoc :id counter)) (inc counter)))))
+      [(z/root loc) id-dict]
+      (recur (z/next (z/edit loc assoc :id counter))
+             (inc counter)
+             (assoc id-dict (or (:name (z/node loc)) (str counter)) counter)))))
