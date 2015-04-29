@@ -61,9 +61,16 @@
   "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
   [root]
   (z/zipper
-    #(vector? (:children %))
+    identity
     (fn [state] (:children state))
-    (fn [state children] (if (:children state)
-                           (assoc state :children (into (:children state) children))
-                           (assoc state :children (into [] children))))
+    (fn [state children]
+      (assoc state :children children))
     {:children root}))
+
+(defn sc-visitor
+  [statechart]
+  (loop [loc (sc-zip statechart)
+         counter 1]
+    (if (z/end? loc)
+      (z/root loc)
+      (recur (z/next (z/edit loc assoc :id counter)) (inc counter)))))
