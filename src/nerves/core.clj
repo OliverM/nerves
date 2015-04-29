@@ -68,10 +68,10 @@
     {:children root}))
 
 (defn- sc->state-index-length
-  [statechart]
   "Determine the length of the active state vector for indexing into the event-action table.
   Increments by one for each state with children, by the count of the child states for states with
   concurrent children, or is unchanged for states without children."
+  [statechart]
   (loop [loc (sc-zip statechart)
          req-indices 0]
     (if (z/end? loc)
@@ -84,7 +84,10 @@
                    (+ 1 req-indices)
                    req-indices)))))))
 
-(defn sc-visitor
+(defn- sc->id-sc
+  "Assign each state a unique id and return a pair of the id-annotated statechart and the dictionary
+  translating ids to names. Assigns the id as the key to the dictionary in cases of states without
+  names (e.g. anonymous nesting states) and the implicit root state."
   [statechart]
   (loop [loc (sc-zip statechart)
          counter 1
@@ -94,3 +97,17 @@
       (recur (z/next (z/edit loc assoc :id counter))
              (inc counter)
              (assoc id-dict (or (:name (z/node loc)) (str counter)) counter)))))
+
+(defn- merge-eats
+  "Merge a child eat with a parent eat"
+  [parent child]
+  (for [parent-transition (seq parent)
+        child-transition (seq child)]
+    (let [[[parent-start-state parent-event] [parent-action parent-end-state]] parent-transition
+          [[child-start-state child-event] [child-action child-end-state]] child-transition
+          merged-start-state (into parent-start-state child-start-state)]
+      {[merged-start-state parent-event] [parent-action parent-end-state]
+       [merged-start-state child-event] [child-action child-end-state]}
+      ))
+  )
+
