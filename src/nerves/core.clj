@@ -6,9 +6,67 @@
             [aprint.core :refer [aprint ap]]
             [nerves.samples :as ns]))
 
-(defrecord Statechart [])
+;; utility functions to augment zipper namespace
+;; ideally would use Potemkin's import-vars but that's not clojurescript-compatible (https://github.com/ztellman/potemkin)
 
-(defrecord State [])
+;; Utility functions are by Meikel Brandmeyer via google group discussion here:
+;; https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
+
+(defn walk-along-and-do
+"Follow along the path from the given loc. When the path is contained
+invoke the found-action. Otherwise invoke the not-found-action with
+the loc of the last contained node as well as the not contained path
+components. pred is used to identify the nodes."
+[loc pred p found-action not-found-action]
+; Get rid of special case: the empty path. This makes pc in
+; the loop always non-nil.
+(if-let [p (seq p)]
+          (loop [loc              loc
+                 [pc & pcs :as p] p]
+            (let [is-equal (pred (z/node loc) pc)]
+              (cond
+                ; No match? Try the next node.
+                (and (not is-equal)
+                     (z/right loc)) (recur (z/right loc) p)
+
+                ; No match!
+                ; XXX: Report the parent and the original path!
+                (not is-equal)        (not-found-action (z/up loc) p)
+
+                ; XXX: From here on the node matches!
+                ; In case we have nothing left in the path, we
+                ; found the target node.
+                (nil? pcs)            (found-action loc)
+
+                ; For branch go on for the children and the rest of
+                ; the path's components.
+                (and (z/branch? loc)
+                     (z/down loc))  (recur (z/down loc) pcs)
+
+                ; In any other case the path is not contained in the tree.
+                :else                 (not-found-action loc pcs))))
+          (found-action loc)))
+
+(defn walk-along
+  "Follow along the path from the given loc. In case the path is not
+  contained in the zipper, an exception is thrown. The empty path is
+  always contained and leaves the loc as is. pred is used to identify
+  the nodes."
+  [loc pred p]
+  (walk-along-and-do loc pred p identity
+                     (fn [_ _] (throw (new Exception "path not in tree")))))
+
+(defn try-walk-along
+  "Try to follow along the path from the given loc. In case the path
+  is not contained in the zipper, the last contained location and the
+  rest of the path are returned in a vector. The empty path is always
+  contained and leaves the loc as is. pred is used to identify the
+  nodes."
+  [loc pred p]
+  (walk-along-and-do loc pred p (fn [loc] [loc nil])
+                     (fn [loc rpath] [loc rpath])))
+
+
 
 (def sample-state
   {:default             true                                            ;; if sibling states exist, this flag indiciates which is the default start state
