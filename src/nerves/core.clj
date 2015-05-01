@@ -106,6 +106,8 @@ components. pred is used to identify the nodes."
                     z/path))
 (walk-along (z/vector-zip test-zip) identical? (filter (set four-path) seven-path))
 (walk-along-and-do (z/vector-zip test-zip) identical? (filter (set four-path) seven-path) z/node "Error")
+;; TODO custom test function, since functions never test as identical even if they're the same function.
+;; e.g. (identical? #() #()) is always false...
 
 
 
