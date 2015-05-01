@@ -6,13 +6,9 @@
             [aprint.core :refer [aprint ap]]
             [nerves.samples :as ns]))
 
-;; utility functions to augment zipper namespace
-;; ideally would use Potemkin's import-vars but that's not clojurescript-compatible (https://github.com/ztellman/potemkin)
-
-;; Utility functions are by Meikel Brandmeyer via google group discussion here:
-;; https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
-
-(defn walk-along-and-do
+;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
+;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
+(defn- walk-along-and-do
 "Follow along the path from the given loc. When the path is contained
 invoke the found-action. Otherwise invoke the not-found-action with
 the loc of the last contained node as well as the not contained path
@@ -47,7 +43,7 @@ components. pred is used to identify the nodes."
                 :else                 (not-found-action loc pcs))))
           (found-action loc)))
 
-(defn walk-along
+(defn- walk-along
   "Follow along the path from the given loc. In case the path is not
   contained in the zipper, an exception is thrown. The empty path is
   always contained and leaves the loc as is. pred is used to identify
@@ -56,7 +52,7 @@ components. pred is used to identify the nodes."
   (walk-along-and-do loc pred p identity
                      (fn [_ _] (throw (new Exception "path not in tree")))))
 
-(defn try-walk-along
+(defn- try-walk-along
   "Try to follow along the path from the given loc. In case the path
   is not contained in the zipper, the last contained location and the
   rest of the path are returned in a vector. The empty path is always
@@ -65,6 +61,53 @@ components. pred is used to identify the nodes."
   [loc pred p]
   (walk-along-and-do loc pred p (fn [loc] [loc nil])
                      (fn [loc rpath] [loc rpath])))
+
+(defn lca-path
+  "Traverse the zipper between the supplied two locations via their lowest common ancestor."
+  [sczip start-path end-path]
+  (let [path-filter (set start-path)
+        lca-path (filter path-filter end-path)
+        dofn (fn [loc] (println "At node: " (z/node loc)))]
+    ;; descend to lca
+    (walk-along-and-do sczip identical? lca-path dofn (throw (new Exception "LCA path not in tree")))
+
+    ;; descend to start point from lca
+    (walk-along-and-do sczip identical? (filter (complement path-filter) end-path) dofn (throw (new Exception "Start path not in tree")))
+
+    ;; descend to end point from lca
+    (walk-along-and-do sczip identical? (filter (complement (set end-path)) start-path) dofn (throw (new Exception "End path not in tree")))
+    ))
+
+;; current test strategy for above...
+(def test-zip [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
+(def four-path (-> (z/vector-zip test-zip)
+                   z/down
+                   z/right
+                   z/right
+                   z/down
+                   z/right
+                   z/down
+                   z/right
+                   z/down
+                   z/path))
+(def seven-path (-> (z/vector-zip test-zip)
+                    z/down
+                    z/right
+                    z/right
+                    z/down
+                    z/right
+                    z/down
+                    z/right
+                    z/right
+                    z/right
+                    z/down
+                    z/right
+                    z/down
+                    z/path))
+(walk-along (z/vector-zip test-zip) identical? (filter (set four-path) seven-path))
+(walk-along-and-do (z/vector-zip test-zip) identical? (filter (set four-path) seven-path) z/node "Error")
+
+
 
 
 
@@ -124,6 +167,18 @@ components. pred is used to identify the nodes."
     (fn [state children]
       (assoc state :children children))
     {:children root}))
+
+;; testing LCA routing for statecharts...
+(def c-posn (-> (sc-zip ns/nested-statechart)
+                z/down
+                z/down
+                z/path))
+(def b-posn (-> (sc-zip ns/nested-statechart)
+                z/down
+                z/right
+                z/path))
+(walk-along (sc-zip ns/nested-statechart) identical? (filter (set c-posn) b-posn))
+
 
 (defn- sc->state-index-length
   "Determine the length of the active state vector for indexing into the event-action table.
