@@ -205,7 +205,7 @@ components. pred is used to identify the nodes."
   names (e.g. anonymous nesting states) and the implicit root state."
   [statechart]
   (loop [loc (sc-zip statechart)
-         counter 1
+         counter 0
          id-dict {}]
     (if (z/end? loc)
       [(z/root loc) id-dict]

@@ -53,8 +53,9 @@
    [[2 0] "4"] [(fn [] "Action 4 called") [1 4]]})
 
 (def parent-eat
-  {[[1] "TestA"] [(fn [] "Action A called") [2]]})
+  {[[1] "3"] [(fn [] "Action 3 called") [2]]
+   [[2] "4"] [(fn [] "Action 4 called") [4]]})
 
 (def child-eat
-  {[[6] "TestB"] [(fn [] "Action B called") [7]]
-   [[7] "TestC"] [(fn [] "Action C called") [6]]})
+  {[[3] "2"] [(fn [] "Action 2 called") [2]]
+   [[4] "1"] [(fn [] "Action 1 called") [3]]})
