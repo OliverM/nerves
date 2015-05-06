@@ -3,12 +3,11 @@
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
             [clojure.core.match :refer [match]]
-            [aprint.core :refer [aprint ap]]
-            [nerves.samples :as ns]))
+            [aprint.core :refer [aprint ap]]))
 
 ;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
 ;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
-(defn- walk-along-and-do
+(defn walk-along-and-do
 "Follow along the path from the given loc. When the path is contained
 invoke the found-action. Otherwise invoke the not-found-action with
 the loc of the last contained node as well as the not contained path
@@ -43,7 +42,7 @@ components. pred is used to identify the nodes."
                 :else                 (not-found-action loc pcs))))
           (found-action loc)))
 
-(defn- walk-along
+(defn walk-along
   "Follow along the path from the given loc. In case the path is not
   contained in the zipper, an exception is thrown. The empty path is
   always contained and leaves the loc as is. pred is used to identify
@@ -52,7 +51,7 @@ components. pred is used to identify the nodes."
   (walk-along-and-do loc pred p identity
                      (fn [_ _] (throw (new Exception "path not in tree")))))
 
-(defn- try-walk-along
+(defn try-walk-along
   "Try to follow along the path from the given loc. In case the path
   is not contained in the zipper, the last contained location and the
   rest of the path are returned in a vector. The empty path is always
@@ -78,39 +77,12 @@ components. pred is used to identify the nodes."
     (walk-along-and-do sczip identical? (filter (complement (set end-path)) start-path) dofn (throw (new Exception "End path not in tree")))
     ))
 
-;; current test strategy for above...
-(def test-zip [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
-(def four-path (-> (z/vector-zip test-zip)
-                   z/down
-                   z/right
-                   z/right
-                   z/down
-                   z/right
-                   z/down
-                   z/right
-                   z/down
-                   z/path))
-(def seven-path (-> (z/vector-zip test-zip)
-                    z/down
-                    z/right
-                    z/right
-                    z/down
-                    z/right
-                    z/down
-                    z/right
-                    z/right
-                    z/right
-                    z/down
-                    z/right
-                    z/down
-                    z/path))
-(walk-along (z/vector-zip test-zip) identical? (filter (set four-path) seven-path))
-(walk-along-and-do (z/vector-zip test-zip) identical? (filter (set four-path) seven-path) z/node "Error")
-;; TODO custom test function, since functions never test as identical even if they're the same function.
-;; e.g. (identical? #() #()) is always false...
 
-
-
+(defmacro action
+  "Generate an action for a state."
+  [anon-fn]
+  (let [fn-name (gensym "n-")]
+    `(def ~fn-name ~anon-fn)))
 
 
 (def sample-state
@@ -157,8 +129,6 @@ components. pred is used to identify the nodes."
       (printf "Warning: state action combination %s %s not found in event-action table." state action) ;; TODO: proper logging
       state)))
 
-;; sample invocation
-(run-action ns/basic-sc-eat [3] "blark")                         ;; gives [1]
 
 (defn sc-zip
   "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
@@ -169,17 +139,6 @@ components. pred is used to identify the nodes."
     (fn [state children]
       (assoc state :children children))
     {:children root}))
-
-;; testing LCA routing for statecharts...
-(def c-posn (-> (sc-zip ns/nested-statechart)
-                z/down
-                z/down
-                z/path))
-(def b-posn (-> (sc-zip ns/nested-statechart)
-                z/down
-                z/right
-                z/path))
-(walk-along (sc-zip ns/nested-statechart) identical? (filter (set c-posn) b-posn))
 
 
 (defn- sc->state-index-length
@@ -199,7 +158,7 @@ components. pred is used to identify the nodes."
                    (+ 1 req-indices)
                    req-indices)))))))
 
-(defn- sc->id-sc
+(defn sc->id-sc
   "Assign each state a unique id and return a pair of the id-annotated statechart and the dictionary
   translating ids to names. Assigns the id as the key to the dictionary in cases of states without
   names (e.g. anonymous nesting states) and the implicit root state."
@@ -213,7 +172,7 @@ components. pred is used to identify the nodes."
              (inc counter)
              (assoc id-dict (or (:name (z/node loc)) (str counter)) counter)))))
 
-(defn- merge-eats
+(defn merge-eats
   "Merge a child eat with a parent eat"
   [parent child]
   (into {} (for [parent-transition (seq parent)

@@ -1,4 +1,6 @@
-(ns nerves.samples)
+(ns nerves.samples
+  (:require [nerves.core :as n]
+            [clojure.zip :as z]))
 
 ;; Testing basic action, all states siblings
 (def basic-statechart
@@ -21,12 +23,16 @@
 
 ;; TODO: default state, default entry & exit actions, user-specified entry & exit actions
 (def basic-sc-eat                                             ;; event action table
-  {[[1] "frob"]  [(fn [] (println "Frob action called")) [2]]
-   [[1] "blork"] [(fn [] (println "Blork action called")) [3]]
-   [[2] "freb"]  [(fn [] (println "Freb action called")) [1]]
-   [[2] "blerk"] [(fn [] (println "Blerk action called")) [3]]
-   [[3] "frab"]  [(fn [] (println "Frab action called")) [2]]
-   [[3] "blark"] [(fn [] (println "Blark action called")) [1]]})
+  {[[1] "frob"]  [(n/action (fn [] (println "Frob action called"))) [2]]
+   [[1] "blork"] [(n/action (fn [] (println "Blork action called"))) [3]]
+   [[2] "freb"]  [(n/action (fn [] (println "Freb action called"))) [1]]
+   [[2] "blerk"] [(n/action (fn [] (println "Blerk action called"))) [3]]
+   [[3] "frab"]  [(n/action (fn [] (println "Frab action called"))) [2]]
+   [[3] "blark"] [(n/action (fn [] (println "Blark action called"))) [1]]})
+
+;; sample invocation
+(n/run-action basic-sc-eat [3] "blark")                         ;; gives [1]
+
 
 ;; Testing refinement, tracking state across multiple levels
 
@@ -59,3 +65,49 @@
 (def child-eat
   {[[3] "2"] [(fn [] "Action 2 called") [2]]
    [[4] "1"] [(fn [] "Action 1 called") [3]]})
+
+
+
+;; current test strategy for walk-along fns...
+(def test-zip [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
+(def four-path (-> (z/vector-zip test-zip)
+                   z/down
+                   z/right
+                   z/right
+                   z/down
+                   z/right
+                   z/down
+                   z/right
+                   z/down
+                   z/path))
+(def seven-path (-> (z/vector-zip test-zip)
+                    z/down
+                    z/right
+                    z/right
+                    z/down
+                    z/right
+                    z/down
+                    z/right
+                    z/right
+                    z/right
+                    z/down
+                    z/right
+                    z/down
+                    z/path))
+(n/walk-along (z/vector-zip test-zip) identical? (filter (set four-path) seven-path))
+(n/walk-along-and-do (z/vector-zip test-zip) identical? (filter (set four-path) seven-path) z/node "Error")
+;; TODO custom test function, since functions never test as identical even if they're the same function.
+;; e.g. (identical? #() #()) is always false...
+
+
+
+;; testing LCA routing for statecharts...
+(def c-posn (-> (n/sc-zip nested-statechart)
+                z/down
+                z/down
+                z/path))
+(def b-posn (-> (n/sc-zip nested-statechart)
+                z/down
+                z/right
+                z/path))
+(n/walk-along (n/sc-zip nested-statechart) identical? (filter (set c-posn) b-posn))
