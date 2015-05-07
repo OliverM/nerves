@@ -1,6 +1,7 @@
 (ns nerves.samples
   (:require [nerves.core :as n]
-            [clojure.zip :as z]))
+            [clojure.zip :as z]
+            [aprint.core :refer [aprint ap]]))
 
 ;; Testing basic action, all states siblings
 (def basic-statechart
@@ -69,8 +70,9 @@
 
 
 ;; current test strategy for walk-along fns...
-(def test-zip [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
-(def four-path (-> (z/vector-zip test-zip)
+(def test-vector [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
+(def test-zip (z/vector-zip test-vector))
+(def four-path (-> test-zip
                    z/down
                    z/right
                    z/right
@@ -80,7 +82,7 @@
                    z/right
                    z/down
                    z/path))
-(def seven-path (-> (z/vector-zip test-zip)
+(def seven-path (-> test-zip
                     z/down
                     z/right
                     z/right
@@ -94,20 +96,20 @@
                     z/right
                     z/down
                     z/path))
-(n/walk-along (z/vector-zip test-zip) identical? (filter (set four-path) seven-path))
-(n/walk-along-and-do (z/vector-zip test-zip) identical? (filter (set four-path) seven-path) z/node "Error")
-;; TODO custom test function, since functions never test as identical even if they're the same function.
-;; e.g. (identical? #() #()) is always false...
+(def t-lca-loc (n/walk-along test-zip identical? (filter (set four-path) seven-path)))
+(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) seven-path))
+(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) four-path))
 
 
 
 ;; testing LCA routing for statecharts...
-(def c-posn (-> (n/sc-zip nested-statechart)
+(def zipped-nsc (n/sc-zip nested-statechart))
+(def c-posn (-> zipped-nsc
                 z/down
                 z/down
                 z/path))
-(def b-posn (-> (n/sc-zip nested-statechart)
+(def b-posn (-> zipped-nsc
                 z/down
                 z/right
                 z/path))
-(n/walk-along (n/sc-zip nested-statechart) identical? (filter (set c-posn) b-posn))
+(n/walk-along zipped-nsc identical? (filter (set c-posn) b-posn))

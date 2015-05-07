@@ -2,8 +2,7 @@
   (:require [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
-            [clojure.core.match :refer [match]]
-            [aprint.core :refer [aprint ap]]))
+            [zip.visit :as v]))
 
 ;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
 ;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
@@ -62,20 +61,25 @@ components. pred is used to identify the nodes."
                      (fn [loc rpath] [loc rpath])))
 
 (defn lca-path
-  "Traverse the zipper between the supplied two locations via their lowest common ancestor."
+  "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
   [sczip start-path end-path]
   (let [path-filter (set start-path)
-        lca-path (filter path-filter end-path)
+        lca-loc (walk-along sczip identical? (filter path-filter end-path))
         dofn (fn [loc] (println "At node: " (z/node loc)))]
-    ;; descend to lca
-    (walk-along-and-do sczip identical? lca-path dofn (throw (new Exception "LCA path not in tree")))
 
     ;; descend to start point from lca
-    (walk-along-and-do sczip identical? (filter (complement path-filter) end-path) dofn (throw (new Exception "Start path not in tree")))
+    (walk-along-and-do lca-loc identical?
+                       (filter (complement path-filter) end-path)
+                       dofn
+                       (fn [last-contained-loc divergent-path]
+                         (throw (new Exception "LCA to start path not in tree"))))
 
     ;; descend to end point from lca
-    (walk-along-and-do sczip identical? (filter (complement (set end-path)) start-path) dofn (throw (new Exception "End path not in tree")))
-    ))
+    (walk-along-and-do lca-loc identical?
+                       (filter (complement (set end-path)) start-path)
+                       dofn
+                       (fn [last-contained-loc divergent-path]
+                         (throw (new Exception "LCA to end path not in tree"))))))
 
 
 (defmacro action
@@ -134,7 +138,7 @@ components. pred is used to identify the nodes."
   "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
   [root]
   (z/zipper
-    identity
+    map?
     (fn [state] (:children state))
     (fn [state children]
       (assoc state :children children))
