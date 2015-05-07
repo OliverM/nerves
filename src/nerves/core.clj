@@ -69,14 +69,14 @@ components. pred is used to identify the nodes."
 
     ;; descend to start point from lca
     (walk-along-and-do lca-loc identical?
-                       (filter (complement path-filter) end-path)
+                       (drop (count lca-loc) start-path)
                        dofn
                        (fn [last-contained-loc divergent-path]
                          (throw (new Exception "LCA to start path not in tree"))))
 
     ;; descend to end point from lca
     (walk-along-and-do lca-loc identical?
-                       (filter (complement (set end-path)) start-path)
+                       (drop (count lca-loc) end-path)
                        dofn
                        (fn [last-contained-loc divergent-path]
                          (throw (new Exception "LCA to end path not in tree"))))))
