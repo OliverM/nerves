@@ -2,7 +2,8 @@
   (:require [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
-            [zip.visit :as v]))
+            [zip.visit :as v]
+            [aprint.core :refer [aprint ap]]))
 
 ;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
 ;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
@@ -15,31 +16,34 @@ components. pred is used to identify the nodes."
 ; Get rid of special case: the empty path. This makes pc in
 ; the loop always non-nil.
 (if-let [p (seq p)]
-          (loop [loc              loc
-                 [pc & pcs :as p] p]
-            (let [is-equal (pred (z/node loc) pc)]
-              (cond
-                ; No match? Try the next node.
-                (and (not is-equal)
-                     (z/right loc)) (recur (z/right loc) p)
+  (loop [loc loc
+         [pc & pcs :as p] p]
+    (let [is-equal (pred (z/node loc) pc)]
+      (cond
+        ; No match. Try the next node.
+        (and (not is-equal)
+             (z/right loc)) (recur (z/right loc) p)
 
-                ; No match!
-                ; XXX: Report the parent and the original path!
-                (not is-equal)        (not-found-action (z/up loc) p)
+        ; No match. Report the parent and the original path
+        (not is-equal) (not-found-action (z/up loc) p)
 
-                ; XXX: From here on the node matches!
-                ; In case we have nothing left in the path, we
-                ; found the target node.
-                (nil? pcs)            (found-action loc)
+        ; From here on the node matches!
+        ; In case we have nothing left in the path, we
+        ; found the target node.
+        (nil? pcs) (found-action loc)
 
-                ; For branch go on for the children and the rest of
-                ; the path's components.
-                (and (z/branch? loc)
-                     (z/down loc))  (recur (z/down loc) pcs)
+        ; For branch go on for the children and the rest of
+        ; the path's components.
+        (and (z/branch? loc)
+             (z/down loc)) (recur (z/down loc) pcs)
 
-                ; In any other case the path is not contained in the tree.
-                :else                 (not-found-action loc pcs))))
-          (found-action loc)))
+        ; In any other case the path is not contained in the tree.
+        :else (not-found-action loc pcs))))
+  (found-action loc)))
+
+(defn gen-path
+  "Generate a series of actions that navigate to a location on a zipper"
+  [loc compare-fn  ])
 
 (defn walk-along
   "Follow along the path from the given loc. In case the path is not
@@ -81,6 +85,23 @@ components. pred is used to identify the nodes."
                        (fn [last-contained-loc divergent-path]
                          (throw (new Exception "LCA to end path not in tree"))))))
 
+(defn lca-path [start-loc end-loc]
+  (let [sczip (z/root start-loc)
+        start-path (z/path start-loc)
+        start-node (z/node start-loc)
+        end-path (z/path end-loc)
+        end-node (z/node end-loc)
+        lca-path (filter (set start-path) end-path)
+        lca-node [(last lca-path)]
+        lca-to-start (conj (vec (drop (count lca-path) start-path)) start-node)
+        lca-to-end (conj (vec (drop (count lca-path) end-path)) end-node)
+        ]
+    (aprint {:start lca-to-start
+             :lca lca-node
+             :end lca-to-end})
+
+    (concat (reverse lca-to-start) lca-node lca-to-end))
+  )
 
 (defmacro action
   "Generate an action for a state."
