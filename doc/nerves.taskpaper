@@ -20,17 +20,24 @@ Data structure shorthand for statecharts:
 		- An array of states, each of which can have arbitrarily-deep substates
 
 Generating the Event-Action Table:
-	An event action table is a map keyed by the statechart state & fired event, returning a pair of actions to perform and the statechart destination state variables after arriving at the event destination
+	An event action table is a map keyed by the statechart state & fired event, returning a pair of actions to perform and the statechart destination state variables after arriving at the event destination... Or. Return a pair of a path of states for the transition, and the action to perform? As the state transitions occur, the state variables are updated as appropriate, until the destination is reached and the action is performed?
 	- Statecharts are recursive collections of states, with new collections keyed on the :children entry. Each collection needs to be decorated with atoms, state identifiers, etc; these decorators need to be wielded by a walker across the entire statechart
 		- For each collection, gather the state names and assign each a number.  @done
 		- For each collection, generate an entry in the state variable 
 			- If not concurrent, create a single entry to hold the currently active state
 			- if concurrent, create an entry for each child state to track the currently active state within each state (redundant if some states have only one child, but however)
-		When startng up the statechart, need an uxiliary data structure to track history and default states per sibling set
+		When startng up the statechart, need an auxiliary data structure to track history and default states per sibling set
 			- History:
 				- No history-specific state variable, just use last visited state in that set as a cache? Should be ignored when selected event transitions in the EAT though. Think that invalidates current approach on keying on state-set & fired action...! Move to core.match, using bindings to capture the history state from the cached state?? Or generate the combination explosion anyway, it's not like it'll be maintained by hand??
 				- Default states:
 					- For each state collection (set of sibling states), if none are tagged as default and there's more than one state, signal an error
 		- For each state,
-			- Generate state entry and state exit actions, performed during state transitions and incorporating any user-specified entry & exit actions, that update the statechart state variables. These should thread through nested states to properly fire entry and exit functions for those states as necessary
-			
+			- Generate state entry and state exit actions, performed during state transitions and incorporating any user-specified entry & exit actions, that update the state variable for that state
+Dynamic or static statecharts?:
+	- Pro's of static compilation:
+		- All information availble, no need to invalidate already done work due to changes in statechart layout
+	- Con's of static compilation:
+		- complex
+	- Pro's of dynamic creation:
+		- Simpler implementation? Just augment the statechart tree via zippers, no conversion to (or need for) event action table, or normalisation of cells to allow all simultaneous states in statechart be represented
+		- Mirrors spec of event action tables in Horrocks (where he explicitly argues against showing all states as it leads to many gaps)

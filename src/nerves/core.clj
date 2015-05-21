@@ -64,43 +64,25 @@ components. pred is used to identify the nodes."
   (walk-along-and-do loc pred p (fn [loc] [loc nil])
                      (fn [loc rpath] [loc rpath])))
 
-(defn lca-path
-  "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
-  [sczip start-path end-path]
-  (let [path-filter (set start-path)
-        lca-loc (walk-along sczip identical? (filter path-filter end-path))
-        dofn (fn [loc] (println "At node: " (z/node loc)))]
-
-    ;; descend to start point from lca
-    (walk-along-and-do lca-loc identical?
-                       (drop (count lca-loc) start-path)
-                       dofn
-                       (fn [last-contained-loc divergent-path]
-                         (throw (new Exception "LCA to start path not in tree"))))
-
-    ;; descend to end point from lca
-    (walk-along-and-do lca-loc identical?
-                       (drop (count lca-loc) end-path)
-                       dofn
-                       (fn [last-contained-loc divergent-path]
-                         (throw (new Exception "LCA to end path not in tree"))))))
-
 (defn lca-path [start-loc end-loc]
-  (let [sczip (z/root start-loc)
-        start-path (z/path start-loc)
-        start-node (z/node start-loc)
-        end-path (z/path end-loc)
-        end-node (z/node end-loc)
-        lca-path (filter (set start-path) end-path)
-        lca-node [(last lca-path)]
-        lca-to-start (conj (vec (drop (count lca-path) start-path)) start-node)
-        lca-to-end (conj (vec (drop (count lca-path) end-path)) end-node)
-        ]
-    (aprint {:start lca-to-start
-             :lca lca-node
-             :end lca-to-end})
+  "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
+  (if (identical? start-loc end-loc)
+    []
+    (let [sczip (z/root start-loc)
+          start-path (z/path start-loc)
+          start-node (z/node start-loc)
+          end-path (z/path end-loc)
+          end-node (z/node end-loc)
+          lca-path (filter (set start-path) end-path)
+          lca-node [(last lca-path)]
+          lca-to-start (conj (vec (drop (count lca-path) start-path)) start-node)
+          lca-to-end (conj (vec (drop (count lca-path) end-path)) end-node)
+          ]
+      (aprint {:start lca-to-start
+               :lca   lca-node
+               :end   lca-to-end})
 
-    (concat (reverse lca-to-start) lca-node lca-to-end))
+      (concat (reverse lca-to-start) lca-node lca-to-end)))
   )
 
 (defmacro action
@@ -108,6 +90,11 @@ components. pred is used to identify the nodes."
   [anon-fn]
   (let [fn-name (gensym "n-")]
     `(def ~fn-name ~anon-fn)))
+
+(defn state=
+  "Check if states are equal by comparing :name"
+  [left right]
+  (= (:name left) (:name right)))
 
 
 (def sample-state
@@ -163,7 +150,7 @@ components. pred is used to identify the nodes."
     (fn [state] (:children state))
     (fn [state children]
       (assoc state :children children))
-    {:children root}))
+    {:children root :name "SC-ROOT-RESERVED"}))
 
 
 (defn- sc->state-index-length
