@@ -41,10 +41,6 @@ components. pred is used to identify the nodes."
         :else (not-found-action loc pcs))))
   (found-action loc)))
 
-(defn gen-path
-  "Generate a series of actions that navigate to a location on a zipper"
-  [loc compare-fn  ])
-
 (defn walk-along
   "Follow along the path from the given loc. In case the path is not
   contained in the zipper, an exception is thrown. The empty path is
@@ -64,7 +60,33 @@ components. pred is used to identify the nodes."
   (walk-along-and-do loc pred p (fn [loc] [loc nil])
                      (fn [loc rpath] [loc rpath])))
 
-(defn lca-path [start-loc end-loc]
+
+(defn state=
+  "Check if states are equal by comparing :name"
+  [left right]
+  (= (:name left) (:name right)))
+
+(defn sc-zip
+  "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
+  [root]
+  (z/zipper
+    map?
+    (fn [state] (:children state))
+    (fn [state children]
+      (assoc state :children children))
+    {:children root :name "SC-ROOT-RESERVED"}))
+
+(defn lca
+  "Given to locations from the same zipper, find their lowest common ancestor."
+  [start end]
+  (let [start-depth (count (z/path start))
+        end-depth (count (z/path end))]
+    (cond
+      (state= (z/node start) (z/node end)) start
+      (< start-depth end-depth) (recur start (z/up end))
+      (> start-depth end-depth) (recur (z/up start) end))))
+
+  (defn lca-path [start-loc end-loc]
   "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
   (if (identical? start-loc end-loc)
     []
@@ -90,12 +112,6 @@ components. pred is used to identify the nodes."
   [anon-fn]
   (let [fn-name (gensym "n-")]
     `(def ~fn-name ~anon-fn)))
-
-(defn state=
-  "Check if states are equal by comparing :name"
-  [left right]
-  (= (:name left) (:name right)))
-
 
 (def sample-state
   {:default             true                                            ;; if sibling states exist, this flag indiciates which is the default start state
@@ -140,17 +156,6 @@ components. pred is used to identify the nodes."
     (do
       (printf "Warning: state action combination %s %s not found in event-action table." state action) ;; TODO: proper logging
       state)))
-
-
-(defn sc-zip
-  "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
-  [root]
-  (z/zipper
-    map?
-    (fn [state] (:children state))
-    (fn [state children]
-      (assoc state :children children))
-    {:children root :name "SC-ROOT-RESERVED"}))
 
 
 (defn- sc->state-index-length

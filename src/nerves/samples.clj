@@ -70,35 +70,9 @@
 
 
 ;; current test strategy for walk-along fns...
-(def test-vector [0 [1] [2 [3 [4] 5 [6 [7] [8]]]]])
-(def test-zip (z/vector-zip test-vector))
-(def four-path (-> test-zip
-                   z/down
-                   z/right
-                   z/right
-                   z/down
-                   z/right
-                   z/down
-                   z/right
-                   z/down
-                   z/path))
-(def seven-path (-> test-zip
-                    z/down
-                    z/right
-                    z/right
-                    z/down
-                    z/right
-                    z/down
-                    z/right
-                    z/right
-                    z/right
-                    z/down
-                    z/right
-                    z/down
-                    z/path))
-(def t-lca-loc (n/walk-along test-zip identical? (filter (set four-path) seven-path)))
-(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) seven-path))
-(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) four-path))
+;(def t-lca-loc (n/walk-along test-zip identical? (filter (set four-path) seven-path)))
+;(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) seven-path))
+;(n/walk-along t-lca-loc identical? (drop (count t-lca-loc) four-path))
 
 
 
