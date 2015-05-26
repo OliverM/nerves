@@ -78,13 +78,16 @@ components. pred is used to identify the nodes."
 
 (defn lca
   "Given to locations from the same zipper, find their lowest common ancestor."
-  [start end]
+  [start end eqfn]
   (let [start-depth (count (z/path start))
         end-depth (count (z/path end))]
     (cond
-      (state= (z/node start) (z/node end)) start
-      (< start-depth end-depth) (recur start (z/up end))
-      (> start-depth end-depth) (recur (z/up start) end))))
+      (eqfn (z/node start) (z/node end)) (do
+                                           (aprint {:start start :end end})
+                                           start)
+      (< start-depth end-depth) (recur start (z/up end) eqfn)
+      (> start-depth end-depth) (recur (z/up start) end eqfn)
+      :else "Wound up nowhere.")))
 
   (defn lca-path [start-loc end-loc]
   "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
