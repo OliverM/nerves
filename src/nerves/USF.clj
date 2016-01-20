@@ -21,9 +21,17 @@
 
 (defn action
   "Instantiate a USF action object. Takes a function that should accept a USF Metadata analogue and a USF Parameter
-  analogue. Parameters are supplied by event dispatchers to provide data useful in executing the action."
-  [action]
-  (proxy [Action] []
-    (execute [data parameter]
-      (action data parameter))))
+  analogue. Parameters are supplied by event dispatchers to provide data useful in executing the action. To test at the
+  REPL, try (.execute (action (fn [metadata parameter] (println \"Test action\"))) nil nil)"
+  [action-fn]
+  (reify Action
+    (execute [this metadata parameter] (action-fn metadata parameter))))
+
+(defn guard
+  "Instantiate a USF guard object. Takes a function that should return true or false. The function should accept a USF
+  Metadata analogue and a USF Parameter analogue. Parameters are supplied by event dispatchers to provide data useful in
+  executing the action."
+  [guard-fn]
+  (reify Guard
+    (check [this metadata parameter] (guard-fn metadata parameter))))
 
