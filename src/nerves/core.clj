@@ -3,19 +3,62 @@
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
             [zip.visit :as v]
-            [puget.printer :refer [cprint]]))
+            [aprint.core :refer [aprint ap]]))
 
-(defrecord State [name actions children])
-(defrecord Event [name target-state action])
+;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
+;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
+(defn walk-along-and-do
+"Follow along the path from the given loc. When the path is contained
+invoke the found-action. Otherwise invoke the not-found-action with
+the loc of the last contained node as well as the not contained path
+components. pred is used to identify the nodes."
+[loc pred p found-action not-found-action]
+; Get rid of special case: the empty path. This makes pc in
+; the loop always non-nil.
+(if-let [p (seq p)]
+  (loop [loc loc
+         [pc & pcs :as p] p]
+    (let [is-equal (pred (z/node loc) pc)]
+      (cond
+        ; No match. Try the next node.
+        (and (not is-equal)
+             (z/right loc)) (recur (z/right loc) p)
 
-(defn sc-zip
-  "Convert a statechart to a zipper"
-  [root-state]
-  (z/zipper
-    (fn [in] (instance? State in))                          ;; can we have children
-    (fn [state] (:children state))                          ;; get state children
-    (fn [state children] (assoc state :children children))  ;; new node with supplied children
-    root-state))
+        ; No match. Report the parent and the original path
+        (not is-equal) (not-found-action (z/up loc) p)
+
+        ; From here on the node matches!
+        ; In case we have nothing left in the path, we
+        ; found the target node.
+        (nil? pcs) (found-action loc)
+
+        ; For branch go on for the children and the rest of
+        ; the path's components.
+        (and (z/branch? loc)
+             (z/down loc)) (recur (z/down loc) pcs)
+
+        ; In any other case the path is not contained in the tree.
+        :else (not-found-action loc pcs))))
+  (found-action loc)))
+
+(defn walk-along
+  "Follow along the path from the given loc. In case the path is not
+  contained in the zipper, an exception is thrown. The empty path is
+  always contained and leaves the loc as is. pred is used to identify
+  the nodes."
+  [loc pred p]
+  (walk-along-and-do loc pred p identity
+                     (fn [_ _] (throw (new Exception "path not in tree")))))
+
+(defn try-walk-along
+  "Try to follow along the path from the given loc. In case the path
+  is not contained in the zipper, the last contained location and the
+  rest of the path are returned in a vector. The empty path is always
+  contained and leaves the loc as is. pred is used to identify the
+  nodes."
+  [loc pred p]
+  (walk-along-and-do loc pred p (fn [loc] [loc nil])
+                     (fn [loc rpath] [loc rpath])))
 
 
 (defn state=
@@ -23,15 +66,28 @@
   [left right]
   (= (:name left) (:name right)))
 
+(defn sc-zip
+  "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
+  [root]
+  (z/zipper
+    map?
+    (fn [state] (:children state))
+    (fn [state children]
+      (assoc state :children children))
+    {:children root :name "SC-ROOT-RESERVED"}))
+
 (defn lca
-  "Given two locations from the same zipper, find their lowest common ancestor."
-  [start end]
+  "Given to locations from the same zipper, find their lowest common ancestor."
+  [start end eqfn]
   (let [start-depth (count (z/path start))
         end-depth (count (z/path end))]
     (cond
-      (state= (z/node start) (z/node end)) start
-      (< start-depth end-depth) (recur start (z/up end))
-      (> start-depth end-depth) (recur (z/up start) end))))
+      (eqfn (z/node start) (z/node end)) (do
+                                           (aprint {:start start :end end})
+                                           start)
+      (< start-depth end-depth) (recur start (z/up end) eqfn)
+      (> start-depth end-depth) (recur (z/up start) end eqfn)
+      :else "Wound up nowhere.")))
 
   (defn lca-path [start-loc end-loc]
   "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
@@ -47,7 +103,7 @@
           lca-to-start (conj (vec (drop (count lca-path) start-path)) start-node)
           lca-to-end (conj (vec (drop (count lca-path) end-path)) end-node)
           ]
-      (cprint {:start lca-to-start
+      (aprint {:start lca-to-start
                :lca   lca-node
                :end   lca-to-end})
 
