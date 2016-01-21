@@ -35,9 +35,12 @@
   (reify Guard
     (check [this metadata parameter] (guard-fn metadata parameter))))
 
+(defn start-state [name parent] (PseudoState. name parent PseudoState/pseudostate_start))
+(defn end-state [name parent] (FinalState. name parent))
+
 (defn basic-statechart-USF []
   (let [statechart (Statechart. "basic-statechart" 2 false)
-        start-state (PseudoState. "begin" statechart PseudoState/pseudostate_start)
+        start-state (start-state "begin" statechart)
         main-state (HierarchicalState. "main" statechart nil nil nil)
         a-state (State. "A" main-state nil nil nil)
         b-state (State. "B" main-state nil nil nil)

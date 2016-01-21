@@ -5,8 +5,8 @@
             [zip.visit :as v]
             [puget.printer :refer [cprint]]))
 
-(defrecord State [name actions children])
-(defrecord Event [name target-state action])
+(defrecord State [name events children])
+(defrecord Event [name target-state action guard])
 
 (defn sc-zip
   "Convert a statechart to a zipper"
