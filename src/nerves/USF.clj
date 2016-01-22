@@ -1,9 +1,27 @@
 (ns nerves.USF
+  (:require [clojure.core.match :refer [match]])
   (:import (com.github.klangfarbe.statechart
              Metadata Action Guard Statechart
              Event TimeoutEvent
              State PseudoState FinalState HierarchicalState ConcurrentState
              Transition)))
+
+(defn statechart
+  "Translates the java USF Statechart constructor into Clojure"
+  ([name] (statechart name 2 false))                        ;; default to two non-daemon threads (the minimum allowed)
+  ([name threads daemon] (Statechart. name threads daemon)))
+
+(defn state
+  "Gathers the various java USF state types into a single factory function keyed by :type"
+  ([type name parent]
+    (state type name parent nil nil nil))
+  ([type name parent on-enter after-enter on-exit]
+  (match type
+         :start (PseudoState. name parent PseudoState/pseudostate_start)
+         :hierarchical (HierarchicalState. name parent on-enter after-enter on-exit)
+         :concurrent (ConcurrentState. name parent on-enter after-enter on-exit)
+         :leaf (State. name parent on-enter after-enter on-exit)
+         :final (FinalState. name parent))))
 
 (defn mydata
   "Try to hang some state on the statechart's Metadata. See http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html
@@ -35,16 +53,13 @@
   (reify Guard
     (check [this metadata parameter] (guard-fn metadata parameter))))
 
-(defn start-state [name parent] (PseudoState. name parent PseudoState/pseudostate_start))
-(defn end-state [name parent] (FinalState. name parent))
-
 (defn basic-statechart-USF []
-  (let [statechart (Statechart. "basic-statechart" 2 false)
-        start-state (start-state "begin" statechart)
-        main-state (HierarchicalState. "main" statechart nil nil nil)
-        a-state (State. "A" main-state nil nil nil)
-        b-state (State. "B" main-state nil nil nil)
-        c-state (State. "C" main-state nil nil nil)]
+  (let [statechart (statechart "basic-statechart")
+        start-state (state :start "begin" statechart)
+        main-state (state :hierarchical "main" statechart)
+        a-state (state :leaf "A" main-state)
+        b-state (state :leaf "B" main-state)
+        c-state (state :leaf "C" main-state)]
     (do
       ; Transitions have a source state, destination state, event, guard and action. Implement as fn accepting a map of options?
       (Transition. start-state a-state)                     ;; two arity form just specifies start & destination states

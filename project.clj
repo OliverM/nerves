@@ -7,11 +7,15 @@
             ]
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/core.async "0.2.374"]
+                 [org.clojure/core.match "0.3.0-alpha4"]
+
                  [mvxcvi/puget "1.0.0"]
                  [io.aviso/pretty "0.1.21"]
+
                  [org.clojure/test.check "0.9.0"]
                  [com.velisco/herbert "0.7.0-alpha2"]
 
+                 [zip-visit "1.1.0"]
                  [com.github.klangfarbe/statechart "1.0"]
                  ]
   )
