@@ -33,9 +33,9 @@
   [transitions]
   (doall (map (partial apply transition) transitions)))
 
-(defn mydata
-  "Try to hang some state on the statechart's Metadata. See http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html
-  for reasons not to do this this way..."
+(defn sc-data
+  "Generate a USF Metadata object, and attach some clojure data accessed via IDeref.
+  See http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html for reasons not to do this this way..."
   [data]
   (let [state (atom data)]
     (proxy [Metadata clojure.lang.IDeref] []
@@ -49,8 +49,7 @@
 
 (defn action
   "Instantiate a USF action object. Takes a function that should accept a USF Metadata analogue and a USF Parameter
-  analogue. Parameters are supplied by event dispatchers to provide data useful in executing the action. To test at the
-  REPL, try (.execute (action (fn [metadata parameter] (println \"Test action\"))) nil nil)"
+  analogue. Parameters are supplied by event dispatchers to provide data useful in executing the action."
   [action-fn]
   (reify Action
     (execute [this metadata parameter] (action-fn metadata parameter))))
@@ -62,30 +61,3 @@
   [guard-fn]
   (reify Guard
     (check [this metadata parameter] (guard-fn metadata parameter))))
-
-(defn basic-statechart-USF []
-  (let [statechart (statechart "basic-statechart")
-        start-state (state :start "begin" statechart)
-        main-state (state :hierarchical "main" statechart)
-        a-state (state :leaf "A" main-state)
-        b-state (state :leaf "B" main-state)
-        c-state (state :leaf "C" main-state)]
-    (connect-transitions
-          [[start-state a-state]
-           [a-state b-state (event "frob") nil nil]
-           [a-state c-state (event "blork") nil nil]
-           [b-state a-state (event "freb") nil nil]
-           [b-state c-state (event "blerk") nil nil]
-           [c-state a-state (event "frab") nil nil]
-           [c-state b-state (event "blark") nil nil]])
-    statechart))
-
-(comment
-  ;; repl session testing basic functionality
-  (def scdata (mydata "Test"))
-  (def basic-sc (basic-statechart-USF))
-  (.start basic-sc scdata)
-  (.dispatch basic-sc scdata (event "frob"))
-  ;; following returns true, indicating statechart is in state b after the "frob" event
-  (.isActive scdata (.getStateByName basic-sc "B"))
-  )
