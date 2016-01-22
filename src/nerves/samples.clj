@@ -6,7 +6,7 @@
 
 
 ;; Testing State record
-(def basic-statechart
+#_(def basic-statechart
   (->State "root"
            [(->Event "begin" "StateA" (fn [] "Begin action called"))]
            [(->State "StateA"
@@ -22,7 +22,7 @@
                       (->Event "blark" "StateA" (fn [] "Blark action called"))]
                      nil)]))
 
-(def nested-statechart
+#_(def nested-statechart
   (->State "root"
            [(->Event "begin" "StateA" (fn [] "Begin action called"))]
            [(->State "StateA"

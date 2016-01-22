@@ -1,54 +1,24 @@
 (ns nerves.core
-  (:require [clojure.core.async :as a
-             :refer [>! <! >!! <!! go chan buffer close! thread
-                                              alts! alts!! timeout]]
+  (:require [clojure.core.async :as a]
             [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
-            ;[zip.visit :as v]
-            [puget.printer :refer [cprint]]))
+            [zip.visit :as v]
+            [puget.printer :refer [cprint]]
+            [nerves.USF :as usf]))
 
-(defrecord Statechart-Data [active-states event-handlers timed-events])
-(defrecord State [name events children default history concurrent-children])
+
+(def sample-state
+  {:name                "test-state"
+   :type                :concurrent                         ;; :concurrent | :start | :final | nil
+   :history             :state                              ;; :state | :deep | nil
+   :children            []                                  ;; children states
+   ;; quadruplets of event name, target state (matching :name), action to perform, and guard on that action (if any)
+   :events             [["event-name" "destination-state" (fn [] nil) nil]]})
+
+(defrecord StatechartData [active-states event-handlers timed-events])
+(defrecord State [name events children type history])
 (defrecord Event [name target-state action guard])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 (defn sc-zip
@@ -59,6 +29,57 @@
     (fn [state] (:children state))                          ;; get state children
     (fn [state children] (assoc state :children children))  ;; new node with supplied children
     root-state))
+
+(defn ->USF-statechart
+  "Create a USF statechart from the nerves statechart spec"
+  ([statechart] ->USF-statechart [statechart "Unnamed"])
+  ([statechart name]
+    (let [zsc (sc-zip statechart)
+          usf (usf/statechart name)]
+      )))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defn state=
@@ -103,16 +124,7 @@
   (let [fn-name (gensym "n-")]
     `(def ~fn-name ~anon-fn)))
 
-(def sample-state
-  {:default             true                                            ;; if sibling states exist, this flag indiciates which is the default start state
-   :history             :state                                         ;; :state | :deep
-   :concurrent-children true
-   :children            []
-   :name                "test-state"
-   :actions             [;; quadruplets of action name, target state (matching :name), action to perform, and guard on that action (if any)
-                         ["action-name" "destination-state" (fn [] nil) nil]
-                         ]
-   })
+
 
 
 (defn statechart->eat
