@@ -1,12 +1,55 @@
 (ns nerves.core
-  (:require [clojure.walk :refer [walk]]
+  (:require [clojure.core.async :as a
+             :refer [>! <! >!! <!! go chan buffer close! thread
+                                              alts! alts!! timeout]]
+            [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
-            [zip.visit :as v]
+            ;[zip.visit :as v]
             [puget.printer :refer [cprint]]))
 
-(defrecord State [name events children])
+(defrecord Statechart-Data [active-states event-handlers timed-events])
+(defrecord State [name events children default history concurrent-children])
 (defrecord Event [name target-state action guard])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (defn sc-zip
   "Convert a statechart to a zipper"
@@ -66,8 +109,8 @@
    :concurrent-children true
    :children            []
    :name                "test-state"
-   :actions             [;; triples of action name, target state (matching :name) and action to perform
-                         ["action-name" "destination-state" (fn [] nil)]
+   :actions             [;; quadruplets of action name, target state (matching :name), action to perform, and guard on that action (if any)
+                         ["action-name" "destination-state" (fn [] nil) nil]
                          ]
    })
 
