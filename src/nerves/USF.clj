@@ -33,14 +33,10 @@
   [transitions]
   (doall (map (partial apply transition) transitions)))
 
-(defn sc-data
-  "Generate a USF Metadata object, and attach some clojure data accessed via IDeref.
-  See http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html for reasons not to do this this way..."
-  [data]
-  (let [state (atom data)]
-    (proxy [Metadata clojure.lang.IDeref] []
-      (toString [] @state)
-      (deref [] state))))
+(defn scdata
+  "Instantiates a USF Metadata object, used by USF to co-ordinate the execution of the statechart. Attaching data
+  to this object (as in the USF docs) isn't catered for, but any object derived from Metadata will work."
+  [] (proxy [Metadata] []))
 
 (defn event
   "Instantiate a USF event object with the supplied name."

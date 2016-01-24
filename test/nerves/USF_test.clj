@@ -3,7 +3,7 @@
            [nerves.USF :refer :all]))
 
 (deftest basic-USF-statechart
-  (let [mydata (sc-data "Test")
+  (let [mydata (scdata)
         statechart (statechart "basic-statechart")
         start-state (state :start "begin" statechart)
         main-state (state :hierarchical "main" statechart)
