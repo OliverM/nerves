@@ -1,10 +1,12 @@
 (ns nerves.USF
   (:require [clojure.core.match :refer [match]])
   (:import (com.github.klangfarbe.statechart
-             Metadata Action Guard Statechart
+             ;; Metadata implemented as SCData via gen-class in nerves.USF.SCData
+             Action Guard Statechart
              Event TimeoutEvent
              State PseudoState FinalState HierarchicalState ConcurrentState
-             Transition)))
+             Transition)
+           ))
 
 (defn statechart
   "Translates the java USF Statechart constructor into Clojure"
@@ -32,11 +34,6 @@
   "Connects the supplied vector of transitions to the set of states. States must already have been instantiated."
   [transitions]
   (doall (map (partial apply transition) transitions)))
-
-(defn scdata
-  "Instantiates a USF Metadata object, used by USF to co-ordinate the execution of the statechart. Attaching data
-  to this object (as in the USF docs) isn't catered for, but any object derived from Metadata will work."
-  [] (proxy [Metadata] []))
 
 (defn event
   "Instantiate a USF event object with the supplied name."
