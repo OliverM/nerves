@@ -1,10 +1,16 @@
 (ns nerves.USF-test
   (:require [clojure.test :refer :all]
-           [nerves.USF :refer :all])
-  (:import (nerves.USF SCData)))
+           [nerves.USF :refer :all]))
+
+(deftest SCData-mintest
+  (let [full (scdata "Test")]
+    (is (= (.data full) "Test") "USF metadata properly set")
+    (.setData full "Test2")
+    (is (= (.data full) "Test2") "USF Metadata properly reset")
+    ))
 
 (deftest basic-USF-statechart
-  (let [mydata (SCData.)
+  (let [mydata (scdata)
         statechart (statechart "basic-statechart")
         start-state (state :start "begin" statechart)
         main-state (state :hierarchical "main" statechart)
@@ -26,6 +32,6 @@
     (is (= (.isActive mydata (.getStateByName statechart "B")) true) "State B now active after previous event")))
 
 
-#_(deftest USF-docs-statechart
-  (let [mymetadata (scdata)
+(deftest USF-docs-statechart
+  (let [mymetadata (scdata 1)
         ]))

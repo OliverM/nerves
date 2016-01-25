@@ -6,12 +6,20 @@
              Event TimeoutEvent
              State PseudoState FinalState HierarchicalState ConcurrentState
              Transition)
+           (nerves.USF SCData)
            ))
 
 (defn statechart
   "Translates the java USF Statechart constructor into Clojure"
   ([name] (statechart name 2 false))                        ;; default to two non-daemon threads (the minimum allowed)
   ([name threads daemon] (Statechart. name threads daemon)))
+
+(defn scdata
+  "Factory function for SCData objects extending the USF Metadata class"
+  ([] (SCData.))
+  ([data] (let [obj (SCData.)]
+            (.setData obj data)
+            obj)))
 
 (defn state
   "Gathers the various java USF state types into a single factory function keyed by :type"
