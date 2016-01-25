@@ -79,4 +79,5 @@
     (Thread/sleep 1500)
     (is (= (.isActive metadata (.getStateByName statechart "F")) true) "Statechart moved to state F after timeout event")
     (is (= (.dispatch statechart metadata (event "anEvent")) true) "State F responded to event \"anEvent\"")
-    (is (= (.isRunning metadata) false) "Statechart complete after reaching final state")))
+    (is (= (.dispatch statechart metadata (event "anEvent")) false) "Sending second anEvent ignored")
+    (is (= (.getData metadata (.getStateByName statechart "A")) nil) "State A deactivated after failing guard test caused transition to final state")))

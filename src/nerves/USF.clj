@@ -30,9 +30,9 @@
          :start (PseudoState. name parent PseudoState/pseudostate_start)
          :hierarchical (HierarchicalState. name parent on-enter after-enter on-exit)
          :concurrent (ConcurrentState. name parent on-enter after-enter on-exit)
-         :junction (PseudoState name parent PseudoState/pseudostate_junction)
-         :join (PseudoState name parent PseudoState/pseudostate_join)
-         :fork (PseudoState name parent PseudoState/pseudostate_fork)
+         :junction (PseudoState. name parent PseudoState/pseudostate_junction)
+         :join (PseudoState. name parent PseudoState/pseudostate_join)
+         :fork (PseudoState. name parent PseudoState/pseudostate_fork)
          :leaf (State. name parent on-enter after-enter on-exit)
          :final (FinalState. name parent))))
 
