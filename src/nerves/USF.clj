@@ -30,13 +30,19 @@
          :start (PseudoState. name parent PseudoState/pseudostate_start)
          :hierarchical (HierarchicalState. name parent on-enter after-enter on-exit)
          :concurrent (ConcurrentState. name parent on-enter after-enter on-exit)
+         :junction (PseudoState name parent PseudoState/pseudostate_junction)
+         :join (PseudoState name parent PseudoState/pseudostate_join)
+         :fork (PseudoState name parent PseudoState/pseudostate_fork)
          :leaf (State. name parent on-enter after-enter on-exit)
          :final (FinalState. name parent))))
 
 (defn transition
   "Translates the USF Transition constructor into Clojure."
   ([source destination] (Transition. source destination))
+  ([source destination event] (Transition. ^State source ^State destination ^Event event))
   ([source destination event guard action] (Transition. source destination event guard action)))
+
+;; TODO: handle internal transitions. These have no start & end states but must have an action and an event (guards are optional). They're used when the currently active state can handle the event and need not transfer to another state (and so the entry, exit actions etc aren't fired)
 
 (defn connect-transitions
   "Connects the supplied vector of transitions to the set of states. States must already have been instantiated."
@@ -48,9 +54,15 @@
   [name]
   (proxy [Event] [name]))
 
+(defn timeout-event
+  "Instantiate a USF timeout object. These have their names hard-coded to TimeoutEvent by USF, and the transition action
+   is fired on the timeout expiring. Timeout parameter is a long expressed in milliseconds."
+  [timeout]
+  (proxy [TimeoutEvent] [timeout]))
+
 (defn action
-  "Instantiate a USF action object. Takes a function that should accept a USF Metadata analogue and a USF Parameter
-  analogue. Parameters are supplied by event dispatchers to provide data useful in executing the action."
+  "Instantiate a USF action object. Takes a function that should accept a USF Metadata derivative and a USF Parameter
+  derivative. Parameters are supplied by event dispatchers to provide data useful in executing the action."
   [action-fn]
   (reify Action
     (execute [this metadata parameter] (action-fn metadata parameter))))
