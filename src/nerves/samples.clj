@@ -1,15 +1,12 @@
 (ns nerves.samples
   (:require [nerves.core :refer :all]
             [clojure.zip :as z]
-            [puget.printer :refer [cprint]])
-  (:import [com.github.klangfarbe.statechart
-            Metadata Action Guard Statechart
-            Event TimeoutEvent
-            State PseudoState FinalState HierarchicalState ConcurrentState
-            Transition]))
+            [puget.printer :refer [cprint]]))
+
+
 
 ;; Testing State record
-(def basic-statechart
+#_(def basic-statechart
   (->State "root"
            [(->Event "begin" "StateA" (fn [] "Begin action called"))]
            [(->State "StateA"
@@ -25,7 +22,7 @@
                       (->Event "blark" "StateA" (fn [] "Blark action called"))]
                      nil)]))
 
-(def nested-statechart
+#_(def nested-statechart
   (->State "root"
            [(->Event "begin" "StateA" (fn [] "Begin action called"))]
            [(->State "StateA"

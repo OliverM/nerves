@@ -1,64 +1,85 @@
 (ns nerves.core
-  (:require [clojure.walk :refer [walk]]
+  (:require [clojure.core.async :as a]
+            [clojure.walk :refer [walk]]
             [clojure.set :refer [map-invert]]
             [clojure.zip :as z]
             [zip.visit :as v]
-            [aprint.core :refer [aprint ap]]))
+            [puget.printer :refer [cprint]]
+            [nerves.USF :as usf]))
 
-;; Utility zipper functions to navigate a zipper via a path, based on version by Meikel Brandmeyer
-;; via google group discussion here: https://groups.google.com/forum/#!topic/clojure/v9ZTnsNnqVs
-(defn walk-along-and-do
-"Follow along the path from the given loc. When the path is contained
-invoke the found-action. Otherwise invoke the not-found-action with
-the loc of the last contained node as well as the not contained path
-components. pred is used to identify the nodes."
-[loc pred p found-action not-found-action]
-; Get rid of special case: the empty path. This makes pc in
-; the loop always non-nil.
-(if-let [p (seq p)]
-  (loop [loc loc
-         [pc & pcs :as p] p]
-    (let [is-equal (pred (z/node loc) pc)]
-      (cond
-        ; No match. Try the next node.
-        (and (not is-equal)
-             (z/right loc)) (recur (z/right loc) p)
 
-        ; No match. Report the parent and the original path
-        (not is-equal) (not-found-action (z/up loc) p)
+(def sample-state
+  {:name                "test-state"
+   :type                :concurrent                         ;; :concurrent | :start | :final | nil
+   :history             :state                              ;; :state | :deep | nil
+   :children            []                                  ;; children states
+   ;; quadruplets of event name, target state (matching :name), action to perform, and guard on that action (if any)
+   :events             [["event-name" "destination-state" (fn [] nil) nil]]})
 
-        ; From here on the node matches!
-        ; In case we have nothing left in the path, we
-        ; found the target node.
-        (nil? pcs) (found-action loc)
+(defrecord StatechartData [active-states event-handlers timed-events])
+(defrecord State [name events children type history])
+(defrecord Event [name target-state action guard])
 
-        ; For branch go on for the children and the rest of
-        ; the path's components.
-        (and (z/branch? loc)
-             (z/down loc)) (recur (z/down loc) pcs)
 
-        ; In any other case the path is not contained in the tree.
-        :else (not-found-action loc pcs))))
-  (found-action loc)))
+(defn sc-zip
+  "Convert a statechart to a zipper"
+  [root-state]
+  (z/zipper
+    (fn [in] (instance? State in))                          ;; can we have children
+    (fn [state] (:children state))                          ;; get state children
+    (fn [state children] (assoc state :children children))  ;; new node with supplied children
+    root-state))
 
-(defn walk-along
-  "Follow along the path from the given loc. In case the path is not
-  contained in the zipper, an exception is thrown. The empty path is
-  always contained and leaves the loc as is. pred is used to identify
-  the nodes."
-  [loc pred p]
-  (walk-along-and-do loc pred p identity
-                     (fn [_ _] (throw (new Exception "path not in tree")))))
+(defn ->USF-statechart
+  "Create a USF statechart from the nerves statechart spec"
+  ([statechart] ->USF-statechart [statechart "Unnamed"])
+  ([statechart name]
+    (let [zsc (sc-zip statechart)
+          usf (usf/statechart name)]
+      )))
 
-(defn try-walk-along
-  "Try to follow along the path from the given loc. In case the path
-  is not contained in the zipper, the last contained location and the
-  rest of the path are returned in a vector. The empty path is always
-  contained and leaves the loc as is. pred is used to identify the
-  nodes."
-  [loc pred p]
-  (walk-along-and-do loc pred p (fn [loc] [loc nil])
-                     (fn [loc rpath] [loc rpath])))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defn state=
@@ -66,28 +87,15 @@ components. pred is used to identify the nodes."
   [left right]
   (= (:name left) (:name right)))
 
-(defn sc-zip
-  "Create a zipper to navigate & manipulate statecharts. Wraps top level state collection in a root state."
-  [root]
-  (z/zipper
-    map?
-    (fn [state] (:children state))
-    (fn [state children]
-      (assoc state :children children))
-    {:children root :name "SC-ROOT-RESERVED"}))
-
 (defn lca
-  "Given to locations from the same zipper, find their lowest common ancestor."
-  [start end eqfn]
+  "Given two locations from the same zipper, find their lowest common ancestor."
+  [start end]
   (let [start-depth (count (z/path start))
         end-depth (count (z/path end))]
     (cond
-      (eqfn (z/node start) (z/node end)) (do
-                                           (aprint {:start start :end end})
-                                           start)
-      (< start-depth end-depth) (recur start (z/up end) eqfn)
-      (> start-depth end-depth) (recur (z/up start) end eqfn)
-      :else "Wound up nowhere.")))
+      (state= (z/node start) (z/node end)) start
+      (< start-depth end-depth) (recur start (z/up end))
+      (> start-depth end-depth) (recur (z/up start) end))))
 
   (defn lca-path [start-loc end-loc]
   "Traverse the zipper between the supplied two zipper paths via their lowest common ancestor."
@@ -103,7 +111,7 @@ components. pred is used to identify the nodes."
           lca-to-start (conj (vec (drop (count lca-path) start-path)) start-node)
           lca-to-end (conj (vec (drop (count lca-path) end-path)) end-node)
           ]
-      (aprint {:start lca-to-start
+      (cprint {:start lca-to-start
                :lca   lca-node
                :end   lca-to-end})
 
@@ -116,16 +124,7 @@ components. pred is used to identify the nodes."
   (let [fn-name (gensym "n-")]
     `(def ~fn-name ~anon-fn)))
 
-(def sample-state
-  {:default             true                                            ;; if sibling states exist, this flag indiciates which is the default start state
-   :history             :state                                         ;; :state | :deep
-   :concurrent-children true
-   :children            []
-   :name                "test-state"
-   :actions             [;; triples of action name, target state (matching :name) and action to perform
-                         ["action-name" "destination-state" (fn [] nil)]
-                         ]
-   })
+
 
 
 (defn statechart->eat
