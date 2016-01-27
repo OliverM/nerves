@@ -17,8 +17,8 @@
    :events             [["event-name" "destination-state" (fn [] nil) nil]]})
 
 (defrecord StatechartData [active-states event-handlers timed-events])
-(defrecord State [name events children type history])
-(defrecord Event [name target-state action guard])
+(defrecord State [type name transitions children history])
+(defrecord Transition [target-state event action guard])
 
 
 (defn sc-zip

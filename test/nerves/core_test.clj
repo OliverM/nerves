@@ -26,6 +26,16 @@
                        (= (apply min v)
                           (first (sort v)))))
 
+(deftest basic
+  (let [statechart
+        (->State :start "begin"
+                 ["A"]                           ;; single transition, unnamed (so fires automatically) with no action or guard
+                 [(->State :leaf "A" [["B" "frob"] ["C" "blork"]] nil nil)
+                  (->State :leaf "B" [["A" "freb"] ["C" "blerk"]] nil nil)
+                  (->State :leaf "C" [["A" "frab"] ["B" "blark"]] nil nil)] nil)]))
+;; TODO: better factory functions for leaf states, etc - move leaf types into separate record defns with interfaces
+
+
 #_(deftest route-test
   (let [zsc-6-6 (sc-zip [{:name     "A"                     ;; fig. 6.6 in Horrocks
                           :default  true
