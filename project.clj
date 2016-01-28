@@ -1,6 +1,6 @@
-(defproject nerves "0.1.0-SNAPSHOT"
+(defproject org.clojars.oliverm/nerves "0.1.0"
   :description "A Clojure Statechart implementation"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/OliverM/nerves"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :plugins [[io.aviso/pretty "0.1.21"]
